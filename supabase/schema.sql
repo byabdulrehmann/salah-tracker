@@ -1,0 +1,12 @@
+create table if not exists public.profiles (id uuid primary key references auth.users(id) on delete cascade, display_name text, timezone text not null default 'UTC', created_at timestamptz not null default now());
+create table if not exists public.daily_prayers (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, prayer_date date not null, prayer_name text not null check (prayer_name in ('fajr','dhuhr','asr','maghrib','isha')), status text not null default 'pending' check (status in ('on_time','late','missed','pending')), completed_at timestamptz, created_at timestamptz not null default now(), unique(user_id, prayer_date, prayer_name));
+create table if not exists public.tahajjud_logs (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, log_date date not null, rakahs integer not null default 2 check (rakahs between 2 and 20), sleep_time time, notes text check (char_length(notes) <= 1000), created_at timestamptz not null default now(), unique(user_id, log_date));
+create table if not exists public.archived_months (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, month_start date not null, total_salahs integer not null default 0, tahajjud_days integer not null default 0, consistency_score numeric(5,2) not null default 0, created_at timestamptz not null default now(), unique(user_id, month_start));
+create index if not exists daily_prayers_user_date_idx on public.daily_prayers(user_id, prayer_date desc);
+create index if not exists tahajjud_logs_user_date_idx on public.tahajjud_logs(user_id, log_date desc);
+
+alter table public.profiles enable row level security; alter table public.daily_prayers enable row level security; alter table public.tahajjud_logs enable row level security; alter table public.archived_months enable row level security;
+create policy "profiles own rows" on public.profiles for all to authenticated using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
+create policy "prayers own rows" on public.daily_prayers for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "tahajjud own rows" on public.tahajjud_logs for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "archives own rows" on public.archived_months for select to authenticated using ((select auth.uid()) = user_id);
