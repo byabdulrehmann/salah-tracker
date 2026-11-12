@@ -10,7 +10,6 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Siraj — Salah & Tahajjud',
   description: 'A quiet, private rhythm for your daily salah and Tahajjud.',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
